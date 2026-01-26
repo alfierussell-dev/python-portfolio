@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import json
 import os
 
-"""Function to load from a .json file"""
+# Function to load from a .json file.
 def load_expenses(filename="expenses.json"):
     if not os.path.exists(filename):
         with open(filename, "w") as file:
@@ -21,14 +21,13 @@ def load_expenses(filename="expenses.json"):
             return []
         except json.JSONDecodeError:
             return []
-
-"""Save to said .json file"""
+# Save to said .json file.
 def save_expenses(expenses, filename="expenses.json"):
     with open(filename, "w") as file:
         json.dump(expenses, file, indent=4)
 
-"""Formating the time stamp to look more user friendly"""
-def fortmat_timestamp(ts: str) -> str:
+# Formating the time stamp to look more user friendly.
+def format_timestamp(ts: str) -> str:
     try:
         dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
         local_dt = dt.astimezone()
@@ -36,12 +35,36 @@ def fortmat_timestamp(ts: str) -> str:
     except Exception:
         return ts
 
-"""This function is to add the expenses."""
-def add_expense(expenses):
-    amount = float(input("Enter amount: "))
-    category = input("Enter category: ")
-    description = input("Enter description: ")
+# Safer code for validating inputs.
+def get_valid_amount():
+    while True:
+        user_input = input("Enter amount: ").strip()
 
+        try:
+            amount = float(user_input)
+
+            if amount <=0:
+                print("Amount must be greater than zero.\n")
+                continue
+            
+            return round(amount, 2)
+       
+        except ValueError:
+            print("Please enter a valid number (e.g. 12.50).\n")
+
+
+def get_non_empty_input(prompt):
+    while True:
+        value = input(prompt).strip()
+        if value:
+            return value
+        print("Input cannot be empty.\n")
+
+# This function is to add the expenses.
+def add_expense(expenses):
+    amount = get_valid_amount()
+    category = get_non_empty_input("Enter category: ")
+    description = get_non_empty_input("Enter description: ")
     expense = {
         "amount": amount,
         "category": category,
@@ -53,18 +76,18 @@ def add_expense(expenses):
     save_expenses(expenses)
     print("Expenses have been added.\n")
 
-"""This function is to view added expenses."""
+# This function is to view added expenses.
 def view_expenses(expenses):
     if not expenses:
         print("No expenses recorded.\n")
         return
     
     for i, expense in enumerate(expenses, start=1):
-        ts = fortmat_timestamp(expense.get("timestamp", ""))
-        print(f"{i}. £{expense['amount']} - {expense['category']} - {expense['description']} - {ts}")
+        ts = format_timestamp(expense.get("timestamp", ""))
+        print(f"{i}. £{expense['amount']:.2f} - {expense['category']} - {expense['description']} - {ts}")
 
     print()
-
+# This function is to delete expenses
 def delete_expense(expenses):
     if not expenses:
         print("No expenses to delete.\n")
@@ -97,12 +120,12 @@ def delete_expense(expenses):
         print("Please enter a valid number.\n")
 
 
-"""Shows the total amount of expenses"""
+# Shows the total amount of expenses
 def total_expenses(expenses):
     total = sum(expense["amount"] for expense in expenses )
     print(f"Total spent: £{total:.2f}\n")
 
-"""main function loop"""
+# main function loop
 def main():
     expenses = load_expenses()
 
