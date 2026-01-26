@@ -26,6 +26,14 @@ def load_expenses(filename="expenses.json"):
 def save_expenses(expenses, filename="expenses.json"):
     with open(filename, "w") as file:
         json.dump(expenses, file, indent=4)
+def fortmat_timestamp(ts: str) -> str:
+    try:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        local_dt = dt.astimezone()
+        return local_dt.strftime("%d-%m-%Y %H:%M")
+    except Exception:
+        return ts
+
 
 
 """This function is to add the expenses."""
@@ -52,8 +60,9 @@ def view_expenses(expenses):
         return
     
     for i, expense in enumerate(expenses, start=1):
-        ts = expense.get("timestamp", "N/A")
+        ts = fortmat_timestamp(expense.get("timestamp", ""))
         print(f"{i}. £{expense['amount']} - {expense['category']} - {expense['description']} - {ts}")
+
     print()
 
 def delete_expense(expenses):
