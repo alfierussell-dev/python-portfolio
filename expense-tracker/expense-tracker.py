@@ -26,6 +26,8 @@ def load_expenses(filename="expenses.json"):
 def save_expenses(expenses, filename="expenses.json"):
     with open(filename, "w") as file:
         json.dump(expenses, file, indent=4)
+
+"""Formating the time stamp to look more user friendly"""
 def fortmat_timestamp(ts: str) -> str:
     try:
         dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
@@ -33,8 +35,6 @@ def fortmat_timestamp(ts: str) -> str:
         return local_dt.strftime("%d-%m-%Y %H:%M")
     except Exception:
         return ts
-
-
 
 """This function is to add the expenses."""
 def add_expense(expenses):
