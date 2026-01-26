@@ -24,6 +24,7 @@ def view_contact():
 	else:
 		for name, phone in contacts.items():
 			print(f"{name}: {phone}")
+
 """searching through contacts"""
 def search_contacts():
 	name = input("Enter name: ")
