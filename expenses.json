@@ -3,12 +3,14 @@
         "amount": 500.0,
         "category": "utilities",
         "description": "ps5",
-        "timestamp": "2026-01-26T20:20:21.914332+00:00"
+        "timestamp": "2026-01-26T20:20:21.914332+00:00",
+        "id": "4af2fcbf-3283-4cf9-a7f0-e08f07c48fb7"
     },
     {
-        "amount": 30.0,
+        "amount": 32.0,
         "category": "utilities",
         "description": "phone bill",
-        "timestamp": "2026-01-26T21:11:08.484712+00:00"
+        "timestamp": "2026-01-26T23:57:59.309249+00:00",
+        "id": "eb7810a2-63cf-4822-a675-e713bfff97df"
     }
 ]
