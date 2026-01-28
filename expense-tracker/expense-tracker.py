@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 
+# HELPERS
 # Function to load from a .json file.
 def load_expenses(filename="expenses.json"):
     if not os.path.exists(filename):
@@ -78,16 +79,47 @@ def get_optional_amount(prompt: str):
             return round(amount, 2)
         except ValueError:
             print("Please enter a valid number (e.g. 12.50) or press enter to keep current.\n")
-#Backfill IDs for old saved expenses
-def ensure_expense_ids(expenses):
+def normalise_amounts(expenses):
     changed = False
-    for expense in expenses:
-        if "id" not in expense or not expense["id"]:
-            expense["id"] = str(uuid.uuid4())
+    for e in expenses:
+        try:
+            e["amount"] = round(float(e["amount"]), 2)
             changed = True
+        except (KeyError, ValueError, TypeError):
+            pass
     if changed:
         save_expenses(expenses)
 
+# ID helpers
+def find_expense_index_by_id(expenses, expense_id: str):
+    expense_id = expense_id.strip().lower()
+    for i, e in enumerate(expenses):
+        if str(e.get("id", "")).lower().startswith(expense_id):
+            return i
+    return None
+def find_expense_index_by_id_prefix(expenses, user_input: str):
+    prefix = user_input.strip().lower()
+    if not prefix:
+        return None
+
+    matches = []
+    for i, e in enumerate(expenses):
+        exp_id = str(e.get("id", "")).lower()
+        if exp_id.startswith(prefix):
+            matches.append(i)
+
+    if len(matches) == 1:
+        return matches[0]
+
+    return None
+def ensure_expense_ids(expenses):
+    changed = False
+    for e in expenses:
+        if isinstance(e, dict) and not e.get("id"):
+            e["id"] = str(uuid.uuid4())
+            changed = True
+    if changed:
+        save_expenses(expenses)
 
 # This function is to add the expenses.
 def add_expense(expenses):
@@ -120,36 +152,35 @@ def view_expenses(expenses):
 
     print()
 # This function is to delete expenses
-def delete_expense(expenses):
+def delete_expense_by_id(expenses):
     if not expenses:
         print("No expenses to delete.\n")
         return
 
     view_expenses(expenses)
+    user_id = input("Enter expense ID (or first 8 chars) to delete: ").strip()
 
-    try:
-        choice = int(input("Enter the number of the expense to delete: "))
+    idx = find_expense_index_by_id_prefix(expenses, user_id)
 
-        if 1 <= choice <= len(expenses):
-            confirm = input("Are you sure you want to delete this expense? (Y/N): ").strip().upper()
+    if idx is None:
+        print("No matching ID found (or ID was ambiguous). Copy the 8-char ID shown in [].\n")
+        return
 
-            if confirm == "Y":
-                removed = expenses.pop(choice - 1)
-                save_expenses(expenses)
-                print(
-                    f"Deleted: £{removed['amount']:.2f2} - "
-                    f"{removed['category']} - {removed['description']}\n"
-                )
-            elif confirm == "N":
-                print("Deletion cancelled.\n")
-            else:
-                print("Invalid choice. Please enter Y or N.\n")
+    e = expenses[idx]
+    confirm = input(
+        f"Delete [{str(e.get('id',''))[:8]}] £{float(e['amount']):.2f} - {e['category']} - {e['description']}? (Y/N): "
+    ).strip().upper()
 
-        else:
-            print("Invalid number.\n")
+    if confirm != "Y":
+        print("Deletion cancelled.\n")
+        return
 
-    except ValueError:
-        print("Please enter a valid number.\n")
+    removed = expenses.pop(idx)
+    save_expenses(expenses)
+    print(f"Deleted [{str(removed.get('id',''))[:8]}].\n")
+
+    
+
 
 # This function is to update/append expenses.
 def edit_expense(expenses):
@@ -170,7 +201,8 @@ def edit_expense(expenses):
 
     print("\nPress Enter to keep the current value.\n")
 
-    new_amount = get_optional_amount(f"Amount (current £{expense['amount']:.2}): ")
+    current_amount = float(expense.get("amount", 0))
+    new_amount = get_optional_amount(f"Amount (current £{current_amount:.2f}): ")
     new_category = get_optional_input(f"Category (current {expense['category']}): ")
     new_description = get_optional_input(f"Description (current {expense['description']}): ")
 
@@ -204,6 +236,7 @@ def total_expenses(expenses):
 def main():
     expenses = load_expenses()
     ensure_expense_ids(expenses)
+    normalise_amounts(expenses)
 
     while True:
         print("Expense Tracker")
@@ -211,7 +244,7 @@ def main():
         print("2. View Expenses")
         print("3. View Total")
         print("4. Delete Expense")
-        print("5. Update")
+        print("5. Update Expense")
         print("6. Exit")
 
         try:
@@ -227,7 +260,7 @@ def main():
         elif choice == 3:
             total_expenses(expenses)
         elif choice == 4:
-            delete_expense(expenses)
+            delete_expense_by_id(expenses)
         elif choice == 5:
             edit_expense(expenses)
         elif choice == 6:
