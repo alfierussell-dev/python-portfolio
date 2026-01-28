@@ -151,7 +151,7 @@ def view_expenses(expenses):
 
 
     print()
-# This function is to delete expenses
+# This function is to delete expenses using their IDs.
 def delete_expense_by_id(expenses):
     if not expenses:
         print("No expenses to delete.\n")
@@ -182,39 +182,37 @@ def delete_expense_by_id(expenses):
     
 
 
-# This function is to update/append expenses.
-def edit_expense(expenses):
+# This function is to update/append expenses by using their IDs.
+def edit_expense_by_id(expenses):
     if not expenses:
         print("No expenses to edit.\n")
         return
+    
     view_expenses(expenses)
+    user_id = input("Enter expense ID (or first 8 chars) to delete: ").strip()
 
-    try:
-        choice = int(input("Enter the number of the expense to edit: "))
-    except ValueError:
-        print("Please enter a valid number.\n")
+    idx = find_expense_index_by_id_prefix(expenses, user_id)
+
+    if idx is None:
+        print("No matching ID found (or ID was ambiguous). Copy the 8-char ID shown in [].\n")
         return
-    if not (1 <= choice <= len(expenses)):
-        return
-  
-    expense = expenses[choice - 1]
+    
+    expense = expenses[idx]
 
     print("\nPress Enter to keep the current value.\n")
 
     current_amount = float(expense.get("amount", 0))
     new_amount = get_optional_amount(f"Amount (current £{current_amount:.2f}): ")
-    new_category = get_optional_input(f"Category (current {expense['category']}): ")
-    new_description = get_optional_input(f"Description (current {expense['description']}): ")
+    new_category = get_optional_input(f"Category (current {expense.get('category','')}): ")
+    new_description = get_optional_input(f"Description (current {expense.get('description','')}): ")
 
     if new_amount is None and new_category is None and new_description is None:
-        print("No changes made.\n")
+        print('No changes made.\n')
         return
-    
-    confirm = input("Save changes? (Y/N): ").strip().upper()
+    confirm = input("Do you wish to save changes? (Y/N): ").strip().upper()
     if confirm != "Y":
         print("Edit cancelled.\n")
-        return
-    
+
     if new_amount is not None:
         expense["amount"] = new_amount
     if new_category is not None:
@@ -222,11 +220,10 @@ def edit_expense(expenses):
     if new_description is not None:
         expense["description"] = new_description
 
-    expense["timestamp"] = datetime.now(timezone.utc).isoformat()
+    expense["timestampt"] = datetime.now(timezone.utc).isoformat()
 
     save_expenses(expenses)
-    print("Expense updated.\n")
-
+    print(f"Expense updated [{str(expense.get('id', ''))[:8]}].\n")
 # Shows the total amount of expenses
 def total_expenses(expenses):
     total = sum(expense["amount"] for expense in expenses )
@@ -244,7 +241,7 @@ def main():
         print("2. View Expenses")
         print("3. View Total")
         print("4. Delete Expense")
-        print("5. Update Expense")
+        print("5. Update Expense (by ID)")
         print("6. Exit")
 
         try:
@@ -262,7 +259,7 @@ def main():
         elif choice == 4:
             delete_expense_by_id(expenses)
         elif choice == 5:
-            edit_expense(expenses)
+            edit_expense_by_id(expenses)
         elif choice == 6:
             print("Goodbye!")
             break

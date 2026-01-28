@@ -12,5 +12,13 @@
         "description": "phone bill",
         "timestamp": "2026-01-28T14:30:20.455977+00:00",
         "id": "eb7810a2-63cf-4822-a675-e713bfff97df"
+    },
+    {
+        "id": "f131b256-28dd-457f-91fb-9fe898e04562",
+        "amount": 600.0,
+        "category": "Investment",
+        "description": "Apple stock",
+        "timestamp": "2026-01-28T15:34:21.062457+00:00",
+        "timestampt": "2026-01-28T15:34:52.327552+00:00"
     }
 ]
