@@ -151,6 +151,28 @@ def view_expenses(expenses):
 
 
     print()
+
+def category_totals(expenses):
+    if not expenses:
+        print("No expenses recorded.\n")
+
+    totals = {}
+
+    for expense in expenses:
+        category = expense["category"]
+        amount = float(expense["amount"])
+
+        if category not in totals:
+            totals[category] = 0.0
+    
+        totals[category] += amount
+    
+    print("\nSpending by Category:")
+    for category, total in totals.items():
+        print(f"{category}: £{total:.2f}")
+
+    print()
+
 # This function is to delete expenses using their IDs.
 def delete_expense_by_id(expenses):
     if not expenses:
@@ -242,7 +264,8 @@ def main():
         print("3. View Total")
         print("4. Delete Expense")
         print("5. Update Expense (by ID)")
-        print("6. Exit")
+        print("6. Category totals")
+        print("7. Exit")
 
         try:
             choice = int(input("Choose an option: "))
@@ -261,6 +284,8 @@ def main():
         elif choice == 5:
             edit_expense_by_id(expenses)
         elif choice == 6:
+            category_totals(expenses)
+        elif choice == 7:
             print("Goodbye!")
             break
         else:
