@@ -138,20 +138,86 @@ def add_expense(expenses):
     save_expenses(expenses)
     print("Expenses have been added.\n")
 
-# This function is to view added expenses.
+# This is a render function to not duplicate data.
+def display_expenses(expense_list):
+    if not expense_list:
+        print("No expenses recorded.\n")
+        return
+    
+    for i, expense in enumerate(expense_list, start=1):
+        ts = format_timestamp(expense.get("timestamp", ""))
+        short_id = str(expense.get("id", ""))[:8]
+        amount = float(expense.get("amount", 0))
+        print(f"{i}, [{short_id}] £{amount:.2f} - {expense.get('category', '')} - {expense.get('description', '')} - {ts}")
+    
+    print()
+
+# This function is the default show all, newest first.
 def view_expenses(expenses):
+    sorted_list = sorted(expenses, key=lambda e: e.get("timestamp", ""), reverse=True)
+    display_expenses(sorted_list)
+
+def filter_by_category(expenses):
     if not expenses:
         print("No expenses recorded.\n")
         return
     
-    for i, expense in enumerate(expenses, start=1):
-        ts = format_timestamp(expense.get("timestamp", ""))
-        short_id = str(expense.get("id", ""))[:8]
-        print(f"{i}. [{short_id}] £{expense['amount']:.2f} - {expense['category']} - {expense['description']} - {ts}")
+    category = get_non_empty_input("Enter cetegory to filter by: ").strip()
+
+    filtered = [e for e in expenses if str(e.get("category", "")).strip().lower() == category.lower()]
+    
+    filtered = sorted(filtered, key=lambda e: e.get("timestamp", ""), reverse=True)
+
+    print(f"\nExpenses in category: {category}")
+    display_expenses(filtered)
+
+def filter_by_month(expenses):
+    if not expenses:
+        print("No expenses recorded.\n")
+        
+    month = get_non_empty_input("Enter month (YYYY-MM), e.g. 2026-01: ").strip()
+
+    filtered = []
+    for e in expenses:
+        ts = e.get("timestamp", "")
+        if not ts:
+            continue
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            month_key = dt.strftime("%Y-%m")
+            if month_key == month:
+                filtered.append(e)
+        except ValueError:
+            continue
+    filtered = sorted(filtered, key=lambda e: e.get("timestamp", ""), reverse=True)
+
+    print(f"\nExpenses in month: {month}")
+    display_expenses(filtered)
+
+# sub-menu function
+def filter_menu(expenses):
+    if not expenses:
+        print("No expenses recorded.\n")
+        return
+
+    print("\nFilter Expenses")
+    print("1. By Category")
+    print("2. By Month (YYYY-MM)")
+    print("3. Back")
+
+    choice = input("Choose an option: ").strip()
+
+    if choice == "1":
+        filter_by_category(expenses)
+    elif choice == "2":
+        filter_by_month(expenses)
+    elif choice == "3":
+        return
+    else:
+        print("Invalid option.\n")
 
 
-    print()
-
+# gives totals for each category.
 def category_totals(expenses):
     if not expenses:
         print("No expenses recorded.\n")
@@ -172,6 +238,8 @@ def category_totals(expenses):
         print(f"{category}: £{total:.2f}")
 
     print()
+
+# Totals for each month using timestamps.
 def monthly_totals(expenses):
     if not expenses:
         print("No expenses recorded.\n")
@@ -202,6 +270,7 @@ def monthly_totals(expenses):
         print(f"{month}: £{total:.2f}")
 
     print()
+
 # This function is to delete expenses using their IDs.
 def delete_expense_by_id(expenses):
     if not expenses:
@@ -295,7 +364,8 @@ def main():
         print("5. Update Expense (by ID)")
         print("6. Category totals")
         print("7. Monthly totals")
-        print("8. Exit")
+        print("8. Filter")
+        print("9. Exit")
 
         try:
             choice = int(input("Choose an option: "))
@@ -318,6 +388,8 @@ def main():
         elif choice == 7:
             monthly_totals(expenses)
         elif choice == 8:
+            filter_menu(expenses)
+        elif choice == 9:
             print("Goodbye!")
             break
         else:
