@@ -6,6 +6,21 @@
 </head>
 <body>
   <h1>Expense Tracker</h1>
-  <p>Your Flask app is now rendering HTML.</p>
+  
+  <h2>Total: £{{ "%.2f"|format(total) }}</h2>
+
+  {% if expenses|length == 0 %}
+    <p>No expenses yet.</p>
+  {% else %}
+    <ul>
+        {% for e in expenses %}
+          <li>
+            <strong>{{ e.category }}</strong> -
+            {{ e.description }} -
+            £{{ "%.2f"|format(e.amount) }}
+          </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 </body>
 </html>
