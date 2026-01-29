@@ -4,23 +4,37 @@
   <meta charset="UTF-8">
   <title>Expense Tracker</title>
 </head>
+
 <body>
   <h1>Expense Tracker</h1>
-  
-  <h2>Total: £{{ "%.2f"|format(total) }}</h2>
 
-  {% if expenses|length == 0 %}
-    <p>No expenses yet.</p>
-  {% else %}
+<p><a href="/add">+ Add expense</a></p>
+
+<h2>Total: £{{ "%.2f"|format(total) }}</h2>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
     <ul>
-        {% for e in expenses %}
-          <li>
-            <strong>{{ e.category }}</strong> -
-            {{ e.description }} -
-            £{{ "%.2f"|format(e.amount) }}
-          </li>
-        {% endfor %}
+      {% for msg in messages %}
+        <li>{{ msg }}</li>
+      {% endfor %}
     </ul>
-    {% endif %}
+  {% endif %}
+{% endwith %}
+
+{% if expenses|length == 0 %}
+  <p>No expenses yet.</p>
+{% else %}
+  <ul>
+    {% for e in expenses %}
+      <li>
+        <strong>{{ e["category"] }}</strong> —
+        {{ e["description"] }} —
+        £{{ "%.2f"|format(e["amount"]) }}
+      </li>
+
+    {% endfor %}
+  </ul>
+{% endif %}
+
 </body>
 </html>
