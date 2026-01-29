@@ -155,7 +155,7 @@ def view_expenses(expenses):
 def category_totals(expenses):
     if not expenses:
         print("No expenses recorded.\n")
-
+        return
     totals = {}
 
     for expense in expenses:
@@ -172,7 +172,36 @@ def category_totals(expenses):
         print(f"{category}: £{total:.2f}")
 
     print()
+def monthly_totals(expenses):
+    if not expenses:
+        print("No expenses recorded.\n")
+        return
+    
+    totals = {}
 
+    for expense in expenses:
+        ts = expense.get("timestamp")
+        if not ts:
+            continue
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+
+        month_key = dt.strftime("%Y-%m")
+
+        amount = float(expense["amount"])
+
+        if month_key not in totals:
+            totals[month_key] = 0.0
+        
+        totals[month_key] += amount
+    
+    print("\nSpending by Month:")
+    for month, total in sorted(totals.items()):
+        print(f"{month}: £{total:.2f}")
+
+    print()
 # This function is to delete expenses using their IDs.
 def delete_expense_by_id(expenses):
     if not expenses:
@@ -265,7 +294,8 @@ def main():
         print("4. Delete Expense")
         print("5. Update Expense (by ID)")
         print("6. Category totals")
-        print("7. Exit")
+        print("7. Monthly totals")
+        print("8. Exit")
 
         try:
             choice = int(input("Choose an option: "))
@@ -286,6 +316,8 @@ def main():
         elif choice == 6:
             category_totals(expenses)
         elif choice == 7:
+            monthly_totals(expenses)
+        elif choice == 8:
             print("Goodbye!")
             break
         else:
