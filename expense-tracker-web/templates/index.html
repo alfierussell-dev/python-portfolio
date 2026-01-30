@@ -41,7 +41,13 @@
 
   <label>
     Month (YYYY-MM):
-    <input name="month" type="month" value="{{ selected_month }}">
+    <select name="month">
+      <option value="">All</option>
+      {% for m in months %}
+      <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+
   </label>
 
   <button type="submit">Apply</button>
