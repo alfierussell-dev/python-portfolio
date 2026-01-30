@@ -51,6 +51,63 @@ def index():
 
     )
 
+@app.get("/stats")
+def stats():
+    category = request.args.get("category", "").strip()
+    month = request.args.get("month", "").strip()
+
+    conditions = []
+    params = []
+
+    if category:
+        conditions.append("category = ?")
+        params.append(category)
+
+    if month:
+        conditions.append("created_at LIKE ?")
+        params.append(f"{month}%")
+
+    where_sql = ""
+    if conditions:
+        where_sql = " WHERE " + " AND ".join(conditions)
+
+    with get_conn() as conn:
+        categories = conn.execute(
+            "SELECT DISTINCT category FROM expenses ORDER BY category"
+        ).fetchall()
+
+        by_category = conn.execute(
+            """
+            SELECT category, COALESCE(SUM(amount), 0) AS total
+            FROM expenses
+            """ + where_sql + """
+            GROUP BY category
+            ORDER BY total DESC
+            """,
+            params,
+        ).fetchall()
+
+        by_month = conn.execute(
+            """
+            SELECT SUBSTR(created_at, 1, 7) AS month, COALESCE(SUM(amount), 0) AS total
+            FROM expenses
+            """ + where_sql + """
+            GROUP BY month
+            ORDER BY month DESC
+            """,
+            params,
+        ).fetchall()
+
+    return render_template(
+        "stats.html",
+        categories=categories,
+        by_category=by_category,
+        by_month=by_month,
+        selected_category=category,
+        selected_month=month,
+    )
+
+
 
 @app.get("/add")
 def add_page():

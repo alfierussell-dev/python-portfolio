@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Analytics</title>
+</head>
+<body>
+  <h1>Analytics</h1>
+
+  <p><a href="{{ url_for('index') }}">Back</a></p>
+
+  <h2>Filters</h2>
+  <form method="get" action="{{ url_for('stats') }}">
+    <label>
+      Category:
+      <select name="category">
+        <option value="">All</option>
+        {% for c in categories %}
+          {% set cat = c["category"] %}
+          <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>
+            {{ cat }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Month (YYYY-MM):
+      <input name="month" type="month" value="{{ selected_month }}">
+    </label>
+
+    <button type="submit">Apply</button>
+    <a href="{{ url_for('stats') }}">Clear</a>
+  </form>
+
+  <h2>Totals by category</h2>
+  {% if by_category|length == 0 %}
+    <p>No data yet.</p>
+  {% else %}
+    <ul>
+      {% for row in by_category %}
+        <li>
+          <strong>{{ row["category"] }}</strong> —
+          £{{ "%.2f"|format(row["total"]) }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <h2>Totals by month</h2>
+  {% if by_month|length == 0 %}
+    <p>No data yet.</p>
+  {% else %}
+    <ul>
+      {% for row in by_month %}
+        <li>
+          <strong>{{ row["month"] }}</strong> —
+          £{{ "%.2f"|format(row["total"]) }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</body>
+</html>

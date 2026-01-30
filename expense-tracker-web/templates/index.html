@@ -10,6 +10,8 @@
 
 <p><a href="/add">+ Add expense</a></p>
 
+<p><a href="{{ url_for('stats') }}">View analytics</a></p>
+
 <h2>Total: £{{ "%.2f"|format(total) }}</h2>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
@@ -39,7 +41,7 @@
 
   <label>
     Month (YYYY-MM):
-    <input name="month" type="text" placeholder="2026-01" value="{{ selected_month }}">
+    <input name="month" type="month" value="{{ selected_month }}">
   </label>
 
   <button type="submit">Apply</button>
