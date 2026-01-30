@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from flask import Flask, render_template, request, url_for, redirect, flash
 from db import get_conn, init_db
 import re
@@ -8,6 +8,31 @@ app.config["SECRET_KEY"] = "dev-secret"
 MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
 init_db()
+
+def last_n_months(n: int = 12) -> list[str]:
+    """Return a list like ['2026-01', '2025-12', ...] for the last n months."""
+    y = date.today().year
+    m = date.today().month
+
+    months = []
+    for _ in range(n):
+        months.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    return months
+
+def describe_filters(category: str, month: str) -> str:
+    if not category and not month:
+        return "No filters (showing all expenses)."
+    parts = []
+    if category:
+        parts.append(f"Category: {category}")
+    if month:
+        parts.append(f"Month: {month}")
+    return "Active filters: " + " • ".join(parts)
+
 
 def get_categories(conn):
     return conn.execute(
@@ -74,6 +99,8 @@ def index():
         categories=categories,
         selected_category=category,
         selected_month=month,
+        months=last_n_months(12),
+        filters_text=describe_filters(category, month),
     )
 
 
@@ -114,6 +141,8 @@ def stats():
         by_month=by_month,
         selected_category=category,
         selected_month=month,
+        months=last_n_months(12),
+        filters_text=describe_filters(category, month),
     )
 
 @app.get("/add")
