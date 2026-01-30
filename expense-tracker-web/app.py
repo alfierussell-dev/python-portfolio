@@ -1,18 +1,37 @@
 from datetime import datetime
 from flask import Flask, render_template, request, url_for, redirect, flash
 from db import get_conn, init_db
+import re
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "dev-secret"
+MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
 init_db()
 
-@app.get("/")
-def index():
+def get_categories(conn):
+    return conn.execute(
+        "SELECT DISTINCT category FROM expenses ORDER BY category"
+    ).fetchall()
+
+def get_filters():
+    """Read filters from the URL query string (GET params)."""
     category = request.args.get("category", "").strip()
     month = request.args.get("month", "").strip()
+    
+    if month and not MONTH_RE.match(month):
+        month = ""
+    
+    return category, month
 
-    sql = "SELECT * FROM expenses"
+def build_where_sql(category: str, month: str):
+    """
+    Build a safe SQL WHERE clause +parameters list based on filters.
+
+    Returns:
+        where_sql (str): "" or " WHERE ... AND ..."
+        params (list): values matching the ? placeholders 
+    """
     conditions = []
     params = []
 
@@ -23,23 +42,30 @@ def index():
     if month:
         conditions.append("created_at LIKE ?")
         params.append(f"{month}%")
-
+    
+    where_sql = ""
     if conditions:
-        sql += " WHERE " + " AND".join(conditions)
+        where_sql = " WHERE " + " AND ".join(conditions)
 
-    sql += " ORDER BY created_at DESC"
+    return where_sql, params
+
+@app.get("/")
+def index():
+    category, month = get_filters()
+    where_sql, params = build_where_sql(category, month)
+
+    base_sql = "SELECT * FROM expenses" + where_sql + " ORDER BY created_at DESC"
 
     with get_conn() as conn:
-        expenses = conn.execute(sql, params).fetchall()
+        expenses = conn.execute(base_sql, params).fetchall()
 
         total = conn.execute(
-            "SELECT COALESCE(SUM(amount), 0) AS total FROM (" + sql + ") AS filtered",
+            "SELECT COALESCE(SUM(amount), 0) AS total FROM (" + base_sql + ") AS filtered",
             params
         ).fetchone()["total"]
 
-        categories = conn.execute(
-            "SELECT DISTINCT category FROM expenses ORDER BY category"
-        ).fetchall()
+        categories = get_categories(conn)
+
 
     return render_template(
         "index.html",
@@ -47,34 +73,17 @@ def index():
         total=total,
         categories=categories,
         selected_category=category,
-        selected_month=month
-
+        selected_month=month,
     )
+
 
 @app.get("/stats")
 def stats():
-    category = request.args.get("category", "").strip()
-    month = request.args.get("month", "").strip()
-
-    conditions = []
-    params = []
-
-    if category:
-        conditions.append("category = ?")
-        params.append(category)
-
-    if month:
-        conditions.append("created_at LIKE ?")
-        params.append(f"{month}%")
-
-    where_sql = ""
-    if conditions:
-        where_sql = " WHERE " + " AND ".join(conditions)
+    category, month = get_filters()
+    where_sql, params = build_where_sql(category, month)
 
     with get_conn() as conn:
-        categories = conn.execute(
-            "SELECT DISTINCT category FROM expenses ORDER BY category"
-        ).fetchall()
+        categories = get_categories(conn)
 
         by_category = conn.execute(
             """
@@ -106,8 +115,6 @@ def stats():
         selected_category=category,
         selected_month=month,
     )
-
-
 
 @app.get("/add")
 def add_page():
