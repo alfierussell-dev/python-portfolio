@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect, flash
 from db import get_conn, init_db
 
 app = Flask(__name__)
@@ -36,7 +36,11 @@ def add_expense():
         if amount < 0:
             raise ValueError
     except ValueError:
-        flask("Amount must be a number ≥ 0.")
+        flash("Amount must be a number ≥ 0.")
+        return redirect(url_for("add_page"))
+   
+    if not category or not description:
+        flash("Category and description are required.")
         return redirect(url_for("add_page"))
     
     created_at = datetime.now().isoformat(timespec="seconds")
@@ -48,8 +52,23 @@ def add_expense():
         )
         conn.commit()
 
-    Flask("Expense added.")
+    flash("Expense added.")
     return redirect(url_for("index"))
+
+@app.post("/delete/<int:expense_id>")
+def delete_expense(expense_id: int):
+    with get_conn() as conn:
+        cur = conn.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+        conn.commit()
+
+    if cur.rowcount == 0:
+        flash("Expense not found.")
+    else:
+        flash("Expense deleted.")
+    
+    return redirect(url_for("index"))
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

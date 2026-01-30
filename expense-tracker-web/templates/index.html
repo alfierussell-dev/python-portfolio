@@ -30,7 +30,15 @@
         <strong>{{ e["category"] }}</strong> —
         {{ e["description"] }} —
         £{{ "%.2f"|format(e["amount"]) }}
-      </li>
+
+        <form method="post"
+              action="{{ url_for('delete_expense', expense_id=e['id']) }}"
+              style="display:inline;">
+         <button type="submit" onclick="return confirm('Delete this expense?')">
+              Delete
+        </button>
+       </form>
+     </li>
 
     {% endfor %}
   </ul>
