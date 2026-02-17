@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Expense Tracker{% endblock %}</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f6f8; }
+    a { color: inherit; }
+    .container { max-width: 980px; margin: 0 auto; padding: 16px; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    nav a { margin-right: 12px; text-decoration: none; }
+    .card { background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin: 16px 0; }
+    .btn { display: inline-block; padding: 10px 14px; border-radius: 10px; background: #111; color: #fff; text-decoration: none; border: 0; cursor: pointer; }
+    .btn.secondary { background: #666; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    label { display: inline-block; }
+    select, input { padding: 8px 10px; border: 1px solid #ddd; border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+    .right { text-align: right; }
+    .flash { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 10px; margin: 12px 0; }
+    form.inline { display: inline; }
+    button.link { background: none; border: none; padding: 0; color: #b00020; text-decoration: underline; cursor: pointer; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1 style="margin: 0;"><a href="{{ url_for('index') }}" style="text-decoration:none;">Expense Tracker</a></h1>
+      <nav>
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('stats') }}">Analytics</a>
+        <a class="btn" href="{{ url_for('add_page') }}">+ Add</a>
+      </nav>
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for msg in messages %}
+            <div>{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
