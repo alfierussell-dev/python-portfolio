@@ -1,13 +1,28 @@
+import csv
+import io
 from datetime import datetime, date
-from flask import Flask, render_template, request, url_for, redirect, flash
+from flask import Flask, render_template, request, url_for, redirect, flash, Response
 from db import get_conn, init_db
 import re
+
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "dev-secret"
 MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
 init_db()
+
+def get_months(conn):
+    rows = conn.execute(
+        """
+        SELECT DISTINCT SUBSTR(created_at, 1, 7) AS month
+        FROM expenses
+        ORDER BY month DESC
+        """
+    ).fetchall()
+    return [r["month"] for r in rows]
+
+
 
 def last_n_months(n: int = 12) -> list[str]:
     """Return a list like ['2026-01', '2025-12', ...] for the last n months."""
@@ -89,7 +104,11 @@ def index():
             params
         ).fetchone()["total"]
 
-        categories = get_categories(conn)
+        categories = conn.execute(
+                "SELECT DISTINCT category FROM expenses ORDER BY category"
+        ).fetchall()
+
+        months = get_months(conn)
 
 
     return render_template(
@@ -99,7 +118,7 @@ def index():
         categories=categories,
         selected_category=category,
         selected_month=month,
-        months=last_n_months(12),
+        months=months,
         filters_text=describe_filters(category, month),
     )
 
@@ -111,6 +130,7 @@ def stats():
 
     with get_conn() as conn:
         categories = get_categories(conn)
+        months = get_months(conn)
 
         by_category = conn.execute(
             """
@@ -141,7 +161,7 @@ def stats():
         by_month=by_month,
         selected_category=category,
         selected_month=month,
-        months=last_n_months(12),
+        months=months,
         filters_text=describe_filters(category, month),
     )
 
@@ -162,6 +182,46 @@ def edit_page(expense_id: int):
         return redirect(url_for("index"))
     
     return render_template("edit.html", exp=exp)
+
+@app.get("/export.csv")
+def export_csv():
+    category, month = get_filters()
+    where_sql, params = build_where_sql(category, month)
+
+    sql = "SELECT id, created_at, category, description, amount FROM expenses" + where_sql + " ORDER BY created_at DESC"
+
+    with get_conn() as conn:
+        rows = conn.execute(sql, params).fetchall()
+
+    # CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow(["id", "created_at", "category", "description", "amount"])
+
+    # Data rows
+    for r in rows:
+        writer.writerow([r["id"], r["created_at"], r["category"], r["description"], r["amount"]])
+
+    csv_text = output.getvalue()
+    output.close()
+
+    # professional file name w/ filters and timestamp
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    parts = ["expenses"]
+    if category:
+        parts.append(f"category-{category}")
+    if month:
+        parts.append(f"month-{month}")
+    filename = "_".join(parts) + f"_{ts}.csv"
+
+    return Response(
+        csv_text,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
 
 
 @app.post("/add")
