@@ -2,12 +2,30 @@ import csv
 import io
 from datetime import datetime, date
 from flask import Flask, render_template, request, url_for, redirect, flash, Response
+from flask_login import LoginManager, login_user, login_required
+from models import db, User
 from db import get_conn, init_db
 import re
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev-secret"
+app.config["SECRET_KEY"] = "change-me-to-a-long-random-string"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///expense_tracker.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"  # type: ignore
+
+@login_manager.user_loader
+def load_user(user_id: str):
+    return User.query.get(int(user_id))
+
+with app.app_context():
+    db.create_all
+
 MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
 init_db()
@@ -89,6 +107,63 @@ def build_where_sql(category: str, month: str):
 
     return where_sql, params
 
+app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "Post":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        user = User.query.filter_by(email=email).first()
+        if not user or not user.check_password(password):
+            flash("Invalid email or password.")
+            return redirect(url_for("login"))
+        
+        login_user(user)
+        return redirect(url_for("index"))
+    
+    return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("Logged out.")
+    return redirect(url_for("login"))
+
+
+
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Email and password are required.")
+            return redirect(url_for("register"))
+        
+        existing = User.query.filter_by(email=email).first
+        if existing:
+            flash("That email is already registered.")
+            return redirect(url_for("register"))
+        
+        user = User(email=email)
+        user.set_password(password)
+
+        db.session.add(user)
+        db.session.commit()
+
+        flash("Account created. Please log in.")
+        return redirect(url_for("login"))
+    
+    return render_template("register.html")
+
+
+@app.route("/")
+@login_required
 @app.get("/")
 def index():
     category, month = get_filters()
@@ -122,7 +197,8 @@ def index():
         filters_text=describe_filters(category, month),
     )
 
-
+@app.route("/")
+@login_required
 @app.get("/stats")
 def stats():
     category, month = get_filters()
@@ -165,9 +241,11 @@ def stats():
         filters_text=describe_filters(category, month),
     )
 
+
 @app.get("/add")
 def add_page():
     return render_template("add.html")
+
 
 @app.get("/edit/<int:expense_id>")
 def edit_page(expense_id: int):
@@ -223,7 +301,8 @@ def export_csv():
     )
 
 
-
+@app.route("/")
+@login_required
 @app.post("/add")
 def add_expense():
     amount_raw = request.form.get("amount", "").strip()
@@ -254,6 +333,8 @@ def add_expense():
     flash("Expense added.")
     return redirect(url_for("index"))
 
+@app.route("/")
+@login_required
 @app.post("/delete/<int:expense_id>")
 def delete_expense(expense_id: int):
     with get_conn() as conn:
@@ -267,6 +348,8 @@ def delete_expense(expense_id: int):
     
     return redirect(url_for("index"))
 
+@app.route("/")
+@login_required
 @app.post("/edit/<int:expense_id>")
 def edit_expense(expense_id: int):
     amount_raw = request.form.get("amount", "").strip()
